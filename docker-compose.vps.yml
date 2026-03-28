@@ -1,0 +1,29 @@
+services:
+  openclaw-vps:
+    build:
+      context: .
+      dockerfile: Dockerfile.vps
+    environment:
+      OLLAMA_API_KEY: "ollama-local"
+      OPENCLAW_GATEWAY_TOKEN: "${OPENCLAW_GATEWAY_TOKEN:-}"
+      TZ: UTC
+    volumes:
+      - openclaw-config:/home/node/.openclaw
+      - ollama-models:/root/.ollama
+    ports:
+      - "18789:18789"  # Gateway
+      - "18790:18790"  # Bridge
+      - "11434:11434"  # Ollama (optional expose)
+    restart: unless-stopped
+    # GPU support (NVIDIA)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  openclaw-config:
+  ollama-models:

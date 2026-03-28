@@ -1,0 +1,46 @@
+# VPS deployment: OpenClaw gateway + Ollama with vision models
+FROM ubuntu:24.04
+
+# Install Node.js, Ollama, and system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    gnupg \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://ollama.ai/install.sh | sh \
+    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install pnpm for OpenClaw
+RUN npm install -g pnpm@latest
+
+WORKDIR /app
+
+# Copy OpenClaw source (or use pre-built)
+# For production, you'd copy dist/ instead
+COPY package.json pnpm-lock.yaml ./
+COPY dist ./dist
+COPY openclaw.mjs .
+COPY extensions ./extensions
+COPY skills ./skills
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile --prod
+
+# Pre-pull vision model for document parsing
+RUN ollama pull moondream:latest && \
+    ollama pull llava:latest
+
+# Environment variables for OpenClaw
+ENV OLLAMA_API_KEY=ollama-local
+ENV OLLAMA_BASE_URL=http://127.0.0.1:11434
+
+# Expose gateway and Ollama ports
+EXPOSE 18789 18790 11434
+
+# Start Ollama in background, then OpenClaw gateway
+CMD /bin/bash -c "ollama serve &> /tmp/ollama.log &" && \
+    sleep 5 && \
+    node openclaw.mjs gateway --bind lan --allow-unconfigured

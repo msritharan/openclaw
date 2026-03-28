@@ -1,0 +1,24 @@
+{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "ollama/llava",
+        "fallbacks": ["ollama/moondream"]
+      },
+      "models": {
+        "ollama/llava": { "alias": "DocParser" },
+        "ollama/moondream": { "alias": "DocParser-Fast" }
+      }
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "ollama": {
+        "baseUrl": "http://127.0.0.1:11434",
+        "apiKey": "ollama-local",
+        "api": "ollama"
+      }
+    }
+  }
+}
